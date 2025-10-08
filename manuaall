@@ -1,0 +1,114 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.util.Stack;
+
+public class ManualToh extends JPanel {
+
+    int numberOfDiscs;
+    Stack<Integer>[] rods = new Stack[3];
+    int selectedRod = -1; // rod selected for picking up a disc
+
+    public ManualToh(int numberOfDiscs) {
+        this.numberOfDiscs = numberOfDiscs;
+        setBackground(Color.WHITE);
+
+        // Initialize rods
+        for (int i = 0; i < 3; i++) {
+            rods[i] = new Stack<>();
+        }
+
+        // Put all discs on the first rod
+        for (int i = numberOfDiscs; i >= 1; i--) {
+            rods[0].push(i);
+        }
+
+        // Add mouse listener for manual moves
+        addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                int panelWidth = getWidth();
+                int rodSpacing = panelWidth / 4;
+
+                // Determine which rod was clicked
+                int clickedRod = 0;
+                if (e.getX() < rodSpacing * 1.5) clickedRod = 0;
+                else if (e.getX() < rodSpacing * 2.5) clickedRod = 1;
+                else clickedRod = 2;
+
+                if (selectedRod == -1) {
+                    // Pick up from rod
+                    if (!rods[clickedRod].isEmpty()) {
+                        selectedRod = clickedRod;
+                    }
+                } else {
+                    // Place on rod
+                    if (clickedRod != selectedRod) {
+                        Stack<Integer> fromStack = rods[selectedRod];
+                        Stack<Integer> toStack = rods[clickedRod];
+                        if (!fromStack.isEmpty()) {
+                            int disc = fromStack.peek();
+                            if (toStack.isEmpty() || toStack.peek() > disc) {
+                                toStack.push(fromStack.pop());
+                            } else {
+                                Toolkit.getDefaultToolkit().beep(); // invalid move
+                            }
+                        }
+                    }
+                    selectedRod = -1; // reset selection
+                }
+                repaint();
+            }
+        });
+    }
+
+    // Draw rods and discs
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        int baseY = getHeight() - 50;  // bottom of rods
+        int rodSpacing = getWidth() / 4;
+        Graphics2D g1 = (Graphics2D) g;
+
+        // Draw base line
+        g1.setStroke(new BasicStroke(10));
+        g1.drawLine(30, baseY, getWidth() - 30, baseY);
+
+        for (int i = 0; i < 3; i++) {
+            int x = (i * 2 + 1) * rodSpacing;
+
+            // Draw rod
+            g1.setColor(Color.BLACK);
+            g1.fillRect(x - 5, baseY - 150, 10, 150);
+
+            // Draw discs
+            Stack<Integer> stack = rods[i];
+            for (int j = 0; j < stack.size(); j++) {
+                int d = stack.get(j);
+                int maxWidth = getWidth() / 3 - 20;
+                int width = Math.min(d * 30, maxWidth);
+                int y = baseY - (j + 1) * 20;
+                g1.setColor(new Color(50 * d % 255, 100 * d % 255, 150 * d % 255));
+                g1.fillRect(x - width / 2, y, width, 20);
+            }
+
+            // Highlight top disc if selected
+            if (selectedRod == i && !stack.isEmpty()) {
+                int topDisc = stack.peek();
+                int topWidth = Math.min(topDisc * 30, getWidth() / 3 - 20);
+                int y = baseY - stack.size() * 20;
+                g1.setColor(Color.YELLOW);
+                g1.drawRect(x - topWidth / 2, y, topWidth, 20);
+            }
+        }
+    }
+
+    public static void main(String[] args) {
+        ManualToh manualPanel = new ManualToh(4); // manual game with 4 discs
+        JFrame f = new JFrame("Manual Tower of Hanoi");
+        f.add(manualPanel);
+        f.setSize(600, 500);
+        f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        f.setVisible(true);
+    }
+}
