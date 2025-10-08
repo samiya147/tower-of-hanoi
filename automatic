@@ -1,0 +1,103 @@
+import javax.swing.*;
+import java.awt.*;
+import java.util.Stack;
+
+public class Automatictoh extends JPanel {
+    int numberOfDiscs;
+    Stack<Integer>[] rods = new Stack[3];
+
+    public Automatictoh(int numberOfDiscs) {
+        this.numberOfDiscs = numberOfDiscs;
+        setBackground(Color.WHITE);
+
+        // Initialize rods
+        for (int i = 0; i < 3; i++) {
+            rods[i] = new Stack<>();
+        }
+
+        // Put all discs on the first rod
+        for (int i = numberOfDiscs; i >= 1; i--) {
+            rods[0].push(i);
+        }
+
+        // Start automatic solving in a separate thread
+        new Thread(() -> {
+            try {
+                Thread.sleep(1000); // small pause before starting
+                solve(numberOfDiscs, 0, 2, 1);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }).start();
+    }
+
+    // Recursive Hanoi solver
+    void solve(int n, int from, int to, int aux) throws InterruptedException {
+        if (n == 0) return;
+        solve(n - 1, from, aux, to);
+        move(from, to);
+        solve(n - 1, aux, to, from);
+    }
+
+    // Move one disc and repaint
+    public void move(int from, int to) {
+        int disc = rods[from].pop();
+        rods[to].push(disc);
+
+        // Thread-safe repaint
+        SwingUtilities.invokeLater(this::repaint);
+
+        try {
+            Thread.sleep(600); // animation speed
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Draw rods and discs
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        int baseY = getHeight() - 50;  // bottom of rods
+        int rodX = getWidth() / 6;     // spacing factor
+        int baseline=getWidth()/2;
+        Graphics2D g1 = (Graphics2D) g;
+
+        g1.setStroke(new BasicStroke(10));
+           g1.drawLine(30, baseY, getWidth() - 30, baseY);
+
+        for (int i = 0; i < 3; i++) {
+            int x = (i * 2 + 1) * rodX;
+
+            // Draw rod
+            g1.setColor(Color.BLACK);
+           
+            g1.fillRect(x - 5, baseY - 150, 10, 150);
+           
+            // Draw discs
+            Stack<Integer> stack = rods[i];
+            for (int j = 0; j < stack.size(); j++) {
+                int d = stack.get(j);
+                int maxWidth = getWidth() / 3 - 20;
+                int width = Math.min(d * 30, maxWidth);
+                int y = baseY - (j + 1) * 20;
+                g1.setColor(new Color(50 * d % 255, 100 * d % 255, 150 * d % 255));
+                g1.fillRect(x - width / 2, y, width, 20);
+            }
+        }
+
+    }
+
+    // Optional main for testing
+    public static void main(String[] args) {
+        Automatictoh tohPanel = new Automatictoh(4); // test with 4 discs
+        JFrame f = new JFrame("Tower of Hanoi");
+        f.add(tohPanel);
+        f.setSize(600, 500);
+      
+        f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        f.setVisible(true);
+        
+    }
+}
+
